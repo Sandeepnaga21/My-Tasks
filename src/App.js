@@ -1,8 +1,7 @@
-import {Component} from 'react'
-import {v4 as uuidv4} from 'uuid'
-import TasksList from './components/TasksList'
-import TagsList from './components/TagsList'
 import './App.css'
+import {Component} from 'react'
+import TagItem from './TagItem'
+import TaskItem from './TaskItem'
 
 const tagsList = [
   {
@@ -31,100 +30,146 @@ const tagsList = [
   },
 ]
 
+// Replace your code here
 class App extends Component {
   state = {
-    searchInput: '',
-    isClicked: false,
-    selectInput: tagsList[0].optionId,
-    tasksList: [],
+    taskInput: '',
+    optionId: tagsList[0].optionId,
+    activeTagId: '',
+    taskList: [],
   }
 
-  onClickSubmit = event => {
+  onChangeTaskInput = event => {
+    this.setState({
+      taskInput: event.target.value,
+    })
+  }
+
+  onChangeOption = event => {
+    this.setState({optionId: event.target.value})
+  }
+
+  changeActiveTagId = tagId => {
+    this.setState({activeTagId: tagId})
+  }
+
+  onSubmitForm = event => {
     event.preventDefault()
-  }
 
-  onChangeselect = event => {
-    this.setState({selectInput: event.target.value})
-  }
+    const {taskInput, optionId} = this.state
 
-  onChangeInput = event => {
-    this.setState({searchInput: event.target.value})
-  }
+    const tagCategory =
+      tagsList[tagsList.findIndex(tag => tag.optionId === optionId)]
 
-  addTask = () => {
-    this.setState({isClicked: true})
-    const {searchInput, selectInput} = this.state
-    const newTask = {
-      id: uuidv4(),
-      searchInput,
-      selectInput,
+    const tagDetails = {
+      taskInput,
+      ...tagCategory,
     }
 
     this.setState(prevState => ({
-      tasksList: [...prevState.tasksList, newTask],
+      taskList: [...prevState.taskList, tagDetails],
+      taskInput: '',
     }))
   }
 
-  getFiterData = optionId => {
-    const {tasksList} = this.state
-    const filterData = tasksList.filter(
-      eachTag => eachTag.optionId === optionId,
-    )
-    this.setState({tasksList: filterData})
-  }
-
-  render() {
-    const {tasksList, isClicked} = this.state
+  renderFormContainer = () => {
+    const {taskInput, optionId} = this.state
 
     return (
-      <div className="container">
-        <form className="c-container" onSubmit={this.onClickSubmit}>
-          <h1 className="heading">Create a task</h1>
-          <label className="t-label" htmlFor="Task">
+      <form className="form-container" onSubmit={this.onSubmitForm}>
+        <h1 className="form-heading">Create a task!</h1>
+        <div className="input-container">
+          <label htmlFor="task" className="label">
             Task
           </label>
           <input
-            type="text"
-            label="Task"
-            onChange={this.onChangeInput}
-            className="input"
+            id="task"
             placeholder="Enter the task here"
+            className="input"
+            value={taskInput}
+            onChange={this.onChangeTaskInput}
           />
-          <label className="t-label" htmlFor="Tags">
+        </div>
+
+        <div className="input-container">
+          <label htmlFor="task" className="label">
             Tags
           </label>
           <select
-            label="Tags"
-            className="select"
-            onChange={this.onChangeselect}
+            id="tags"
+            key={optionId}
+            className="input"
+            onChange={this.onChangeOption}
+            value={optionId}
           >
-            {tagsList.map(each => (
-              <option key="optionId">{each.optionId}</option>
+            {tagsList.map(tag => (
+              <option
+                id={tag.optionId}
+                className="option"
+                key={tag.optionId}
+                value={tag.optionId}
+              >
+                {tag.displayText}
+              </option>
             ))}
           </select>
-          <button type="button" onClick={this.addTask} className="a-button">
-            Add Task
-          </button>
-        </form>
-        <div className="t-container">
-          <div className="tag">
-            <h1 className="t-heading">Tags</h1>
-            {tagsList.map(eachTag => (
-              <TagsList tagDetails={eachTag} getFiterData={this.getFiterData} />
+        </div>
+        <button className="add-button" type="submit">
+          Add Task
+        </button>
+      </form>
+    )
+  }
+
+  getFilteredTaskList = () => {
+    const {activeTagId, taskList} = this.state
+
+    if (activeTagId !== '') {
+      return taskList.filter(task => task.optionId === activeTagId)
+    }
+    return taskList
+  }
+
+  renderTagsAndTaskListView = () => {
+    const {activeTagId} = this.state
+    const filteredTaskList = this.getFilteredTaskList()
+
+    return (
+      <div className="tag-list-container">
+        <h1 className="heading">Tags</h1>
+        <ul className="tag-list">
+          {tagsList.map(eachTag => (
+            <TagItem
+              tagDetails={eachTag}
+              key={eachTag.optionId}
+              activeTagId={activeTagId}
+              changeActiveTagId={this.changeActiveTagId}
+            />
+          ))}
+        </ul>
+        <h1 className="heading">Tasks</h1>
+
+        {filteredTaskList.length < 1 ? (
+          <div className="no-task-view-container">
+            <p className="no-task-view-heading">No Tasks Added Yet</p>
+          </div>
+        ) : (
+          <ul className="task-list">
+            {filteredTaskList.map(task => (
+              <TaskItem taskDetails={task} key={task.optionId} />
             ))}
-          </div>
-          <div className="tasks">
-            <h1 className="t-heading">Tasks</h1>
-            {isClicked ? (
-              <ul>
-                {tasksList.map(eachTask => (
-                  <TasksList taskDetails={eachTask} key={eachTask.id} />
-                ))}
-              </ul>
-            ) : (
-              <p className="n-para">No Tasks Added Yet</p>
-            )}
-          </div>
+          </ul>
+        )}
+      </div>
+    )
+  }
+
+  render() {
+    return (
+      <div className="app-container">
+        <div className="responsive-container">
+          {this.renderFormContainer()}
+          {this.renderTagsAndTaskListView()}
         </div>
       </div>
     )
